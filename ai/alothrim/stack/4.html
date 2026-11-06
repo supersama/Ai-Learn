@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 创建一个空对象
+        // Object 是顶层对象
+        // Object
+        // const xxx = new Object();
+        // console.log(xxx);
+        function Person(name,age)
+        {   // 构造实例，实例私有的属性
+            conosole.log(this);
+            this.name =name;
+            this.age = age;
+
+        }
+
+        // 原型对象上的方法是公用的
+        Person.prototype.poem = '静夜思'
+        Person.prototype.say = function()
+        {
+            console.log(`我叫${this.name},我今年${this.age}岁了。`)
+        }
+
+        const zzz = new Person('ss',19);
+        
+        console.log(zzz.age,zzz.name);
+        console.log(zzz.toString())
+    </script>
+</body>
+</html>
