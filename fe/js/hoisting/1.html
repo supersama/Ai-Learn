@@ -1,0 +1,19 @@
+
+<html lang="en">
+<head1> 
+</head1>
+<body>
+    <script>
+        // 编译阶段 准备好作用域global{showName(),myName}
+    showName();
+    console.log(myName);
+    var muName = 'xx';
+    var myName = '极客时间';
+    function showName()
+    {   // 编译阶段二 为showName 执行准备
+        var a =1;
+        console.log('函数ShowName被执行')
+    }
+    </script>
+</body>
+</html>

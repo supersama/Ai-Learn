@@ -1,0 +1,130 @@
+:root {
+  --bg: #f5f6f8;
+  --pad-bg: #ffffff;
+  --pad-border: #e2e6ea;
+  --text: #1f2933;
+  --muted: #6b7280;
+  --accent: #ff6b35; /* 敲击点亮色 */
+  --shadow: 0 2px 6px rgba(31, 41, 51, 0.08);
+  --shadow-hover: 0 6px 16px rgba(31, 41, 51, 0.12);
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+h1 {
+  font-size: 2rem;
+  margin: 0 0 8px;
+  letter-spacing: 2px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.hint kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 6px;
+  margin: 0 1px;
+  background: #fff;
+  border: 1px solid var(--pad-border);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--text);
+}
+
+.kit {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: min(520px, 100%);
+}
+
+.pad {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--pad-border);
+  border-radius: var(--radius);
+  background: var(--pad-bg);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.08s ease, background 0.08s ease, box-shadow 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.pad:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.pad-name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pad kbd {
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--pad-border);
+  border-radius: 5px;
+  padding: 1px 7px;
+  font-family: inherit;
+}
+
+.pad.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 4px 18px rgba(255, 107, 53, 0.35);
+  transform: scale(0.94);
+}
+
+.pad.active .pad-name {
+  color: #fff;
+}
+
+.pad.active kbd {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 420px) {
+  .kit {
+    gap: 12px;
+  }
+  .pad-name {
+    font-size: 0.9rem;
+  }
+}

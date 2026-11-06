@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>电子鼓 · Drum Kit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>电子鼓</h1>
+    <p class="hint">
+      点击鼓垫，或按键盘
+      <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd>
+      敲击
+    </p>
+  </header>
+
+  <main class="kit">
+    <button class="pad" data-key="a"><span class="pad-name">底鼓</span><kbd>A</kbd></button>
+    <button class="pad" data-key="s"><span class="pad-name">军鼓</span><kbd>S</kbd></button>
+    <button class="pad" data-key="d"><span class="pad-name">闭合踩镲</span><kbd>D</kbd></button>
+    <button class="pad" data-key="f"><span class="pad-name">开放踩镲</span><kbd>F</kbd></button>
+    <button class="pad" data-key="g"><span class="pad-name">低音通鼓</span><kbd>G</kbd></button>
+    <button class="pad" data-key="h"><span class="pad-name">中音通鼓</span><kbd>H</kbd></button>
+    <button class="pad" data-key="j"><span class="pad-name">高音通鼓</span><kbd>J</kbd></button>
+    <button class="pad" data-key="k"><span class="pad-name">吊镲</span><kbd>K</kbd></button>
+    <button class="pad" data-key="l"><span class="pad-name">叮叮镲</span><kbd>L</kbd></button>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

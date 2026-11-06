@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MiniWorld</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+body{background:#000;color:#fff;overflow:hidden}
+/* 顶部标题 */
+#header{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:bold;z-index:10}
+/* 右侧控制面板 */
+#panel{position:absolute;top:60px;right:12px;display:flex;flex-direction:column;gap:10px;z-index:10}
+#panel button{padding:8px 12px;font-size:14px;cursor:pointer}
+/* 物品选择栏 */
+#itemBar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+#itemBar button{padding:6px 10px;cursor:pointer}
+/* 左下角小地图 */
+#minimapWrap{position:absolute;bottom:12px;left:12px;z-index:10}
+#minimap{width:140px;height:140px;border:1px solid #666;background:#111}
+/* three画布 */
+#canvas-container{width:100vw;height:100vh}
+</style>
+</head>
+<body>
+<div id="header">miniworld</div>
+
+<!-- 右侧按钮 -->
+<div id="panel">
+  <select id="worldSelect">
+    <option value="0">世界 1</option>
+    <option value="1">世界 2</option>
+    <option value="2">世界 3</option>
+  </select>
+  <button id="btnRandom">随机生成3×3村庄</button>
+  <button id="btnClear">清空世界</button>
+</div>
+
+<!-- 放置物品 -->
+<div id="itemBar">
+  <button data-type="grass">草方块</button>
+  <button data-type="tree">树</button>
+  <button data-type="house">房子</button>
+</div>
+
+<!-- 小地图 -->
+<div id="minimapWrap">
+  <canvas id="minimap"></canvas>
+</div>
+
+<div id="canvas-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// ========== 配置 ==========
+const WORLD_SIZE = 21;
+const BLOCK_SIZE = 1;
+let currentItem = "grass";
+let activeWorldIdx = 0;
+// 存档：3个世界，每个存储 {x,y,type}
+let worlds = [[],[],[]];
+
+// 加载本地存档
+function loadStorage(){
+  const raw = localStorage.getItem("miniworld_save");
+  if(raw) worlds = JSON.parse(raw);
+}
+function saveStorage(){
+  localStorage.setItem("miniworld_save", JSON.stringify(worlds));
+}
+
+// ========== Three初始化 ==========
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(12,16,18);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.getElementById("canvas-container").appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+
+// 灯光
+const ambientLight = new THREE.AmbientLight(0xffffff,0.6);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff,0.8);
+dirLight.position.set(10,20,10);
+scene.add(dirLight);
+
+// 射线拾取（点击放置方块）
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// 网格地面（21*21 辅助平面）
+const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
+const groundMat = new THREE.MeshBasicMaterial({color:0x222222, transparent:true, opacity:0.2, side:THREE.DoubleSide});
+const groundPlane = new THREE.Mesh(groundGeo, groundMat);
+groundPlane.rotation.x = -Math.PI/2;
+groundPlane.position.set((WORLD_SIZE-1)/2, 0, (WORLD_SIZE-1)/2);
+scene.add(groundPlane);
+
+// 物体容器
+const blockGroup = new THREE.Group();
+scene.add(blockGroup);
+
+// 材质缓存
+const matMap = {
+  grass: new THREE.MeshLambertMaterial({color:0x33aa33}),
+  treeTrunk: new THREE.MeshLambertMaterial({color:0x8b572a}),
+  treeLeaf: new THREE.MeshLambertMaterial({color:0x228822}),
+  house: new THREE.MeshLambertMaterial({color:0xaa7744})
+};
+
+// ========== 方块构建 ==========
+function clearBlockGroup(){
+  while(blockGroup.children.length>0){
+    const obj = blockGroup.children.pop();
+    obj.geometry?.dispose();
+    obj.material?.dispose();
+  }
+}
+
+// 渲染当前世界
+function renderWorld(){
+  clearBlockGroup();
+  const list = worlds[activeWorldIdx];
+  for(const b of list){
+    addBlockMesh(b.x, b.y, b.type);
+  }
+  drawMinimap();
+}
+
+function addBlockMesh(x,z,type){
+  if(x<0||x>=WORLD_SIZE||z<0||z>=WORLD_SIZE) return;
+  if(type==="grass"){
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE), matMap.grass);
+    mesh.position.set(x, BLOCK_SIZE/2, z);
+    blockGroup.add(mesh);
+  }else if(type==="tree"){
+    // 树干
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.6,2,0.6), matMap.treeTrunk);
+    trunk.position.set(x, 1, z);
+    blockGroup.add(trunk);
+    // 树冠
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(1.8,1.8,1.8), matMap.treeLeaf);
+    leaf.position.set(x,3,z);
+    blockGroup.add(leaf);
+  }else if(type==="house"){
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2,1.5,2), matMap.house);
+    body.position.set(x+0.5, 0.75, z+0.5);
+    blockGroup.add(body);
+  }
+}
+
+// 添加方块数据（去重）
+function setBlock(x,z,type){
+  const arr = worlds[activeWorldIdx];
+  // 移除同位置旧方块
+  const idx = arr.findIndex(item=>item.x===x && item.z===z);
+  if(idx>=0) arr.splice(idx,1);
+  arr.push({x,z,type});
+  saveStorage();
+  renderWorld();
+}
+
+// ========== 随机3*3村庄 ==========
+function randomVillage(){
+  const arr = worlds[activeWorldIdx];
+  const cx = Math.floor(WORLD_SIZE/2);
+  const cz = Math.floor(WORLD_SIZE/2);
+  for(let dx=-1;dx<=1;dx++){
+    for(let dz=-1;dz<=1;dz++){
+      const x = cx+dx;
+      const z = cz+dz;
+      const r = Math.random();
+      let t = "grass";
+      if(r>0.75) t="house";
+      else if(r>0.4) t="tree";
+      arr.push({x,z,type:t});
+    }
+  }
+  saveStorage();
+  renderWorld();
+}
+
+// ========== 小地图绘制 ==========
+const miniCanvas = document.getElementById("minimap");
+const miniCtx = miniCanvas.getContext("2d");
+miniCanvas.width = 140;
+miniCanvas.height =140;
+const scale = 140 / WORLD_SIZE;
+
+function drawMinimap(){
+  miniCtx.fillStyle="#111";
+  miniCtx.fillRect(0,0,140,140);
+  const list = worlds[activeWorldIdx];
+  for(const b of list){
+    let c="#3a3";
+    if(b.type==="tree") c="#080";
+    if(b.type==="house") c="#a74";
+    miniCtx.fillStyle=c;
+    miniCtx.fillRect(b.x*scale, b.z*scale, scale+0.5, scale+0.5);
+  }
+}
+
+// ========== 鼠标点击放置 ==========
+renderer.domElement.addEventListener("pointerdown", (e)=>{
+  mouse.x = (e.clientX / window.innerWidth)*2 -1;
+  mouse.y = -(e.clientY / window.innerHeight)*2 +1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObject(groundPlane);
+  if(intersects.length>0){
+    const hit = intersects[0].point;
+    const gx = Math.floor(hit.x);
+    const gz = Math.floor(hit.z);
+    if(gx>=0&&gx<WORLD_SIZE && gz>=0&&gz<WORLD_SIZE){
+      setBlock(gx,gz,currentItem);
+    }
+  }
+})
+
+// ========== UI事件 ==========
+// 物品选择
+document.querySelectorAll("#itemBar button").forEach(btn=>{
+  btn.onclick = ()=> currentItem = btn.dataset.type;
+})
+
+// 世界切换
+document.getElementById("worldSelect").onchange = function(){
+  activeWorldIdx = parseInt(this.value);
+  renderWorld();
+}
+
+// 随机村庄
+document.getElementById("btnRandom").onclick = randomVillage;
+
+// 清空世界
+document.getElementById("btnClear").onclick = function(){
+  worlds[activeWorldIdx] = [];
+  saveStorage();
+  renderWorld();
+}
+
+// ========== 窗口适配 ==========
+window.addEventListener('resize',()=>{
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+})
+
+// ========== 启动 ==========
+loadStorage();
+renderWorld();
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
